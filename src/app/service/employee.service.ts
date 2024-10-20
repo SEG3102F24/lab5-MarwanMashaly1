@@ -1,19 +1,57 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, Observable} from "rxjs";
-import {Employee} from "../model/employee";
+import { collectionData, Firestore } from '@angular/fire/firestore';
+import { addDoc, collection, DocumentReference } from '@firebase/firestore';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { Employee } from '../model/employee';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EmployeeService {
-  employees$: BehaviorSubject<readonly Employee[]> = new BehaviorSubject<readonly Employee[]>([]);
+  private employeesCollection = collection(this.firestore, 'employees');
+  employees$: BehaviorSubject<readonly Employee[]> = new BehaviorSubject<
+    readonly Employee[]
+  >([]);
+
+  constructor(private firestore: Firestore) {
+    this.getEmployees().subscribe({
+      next: (employees) => {
+        this.employees$.next(employees);
+      },
+      error: (error) => {
+        console.error(error);
+      },
+    });
+  }
 
   get $(): Observable<readonly Employee[]> {
     return this.employees$;
   }
 
-  addEmployee(employee: Employee) {
-    this.employees$.next([...this.employees$.getValue(), employee]);
-    return true;
+  getEmployees(): Observable<Employee[]> {
+    return collectionData(this.employeesCollection, { idField: 'id' }).pipe(
+      map((employees: any[]) => {
+        return employees.map((employee) => ({
+          ...employee,
+          dateOfBirth: new Date(employee.dateOfBirth),
+        }));
+      })
+    );
+  }
+
+  async addEmployee(employee: Employee): Promise<DocumentReference> {
+    try {
+      const data = {
+        ...employee,
+      };
+
+      const docRef = await addDoc(this.employeesCollection, data);
+      console.log('Document written with ID: ', docRef.id);
+      return docRef;
+    } catch (e) {
+      console.error('Error adding document: ', e);
+      throw e;
+    }
   }
 }
