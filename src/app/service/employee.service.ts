@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { collectionData, Firestore } from '@angular/fire/firestore';
-import { addDoc, collection, DocumentReference } from '@firebase/firestore';
+import {
+  addDoc,
+  collection,
+  DocumentReference,
+  Timestamp,
+} from '@firebase/firestore';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Employee } from '../model/employee';
@@ -34,7 +39,7 @@ export class EmployeeService {
       map((employees: any[]) => {
         return employees.map((employee) => ({
           ...employee,
-          dateOfBirth: new Date(employee.dateOfBirth),
+          dateOfBirth: (employee.dateOfBirth as Timestamp).toDate(),
         }));
       })
     );
